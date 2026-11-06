@@ -1,43 +1,55 @@
 @model IReadOnlyList<PgrStudentManagement.Web.Modules.PhdApplications.Models.PhdApplication>
 
-@*
-    TODO (Lab Part 9):
-    - Add a status filter <form method="get"> above the table.
-    - Add a <caption> inside <table> and scope="col" on <th> elements.
-    - Add <span class="visually-hidden"> for @application.ApplicationReference (@application.FullName)</span> to action links.
-    See Snippet 9.A in LabResources/code-snippets.md.
-*@
-
 @{
     ViewData["Title"] = "PhD Applications";
+    var selectedStatus = ViewData["SelectedStatus"] as ApplicationStatus?;
 }
 
-<h1>PhD Applications</h1>
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1>PhD Applications</h1>
+    <a asp-action="Create" class="btn btn-primary">Create Application</a>
+</div>
 
-<p>
-    <a asp-action="Create"
-       class="btn btn-primary">
-        Create Application
-    </a>
-</p>
+<form method="get" asp-action="Index" class="row g-2 align-items-end mb-4">
+    <div class="col-auto">
+        <label for="statusFilter" class="form-label">Filter by status</label>
+        <select id="statusFilter" name="statusFilter" class="form-select">
+            <option value="">All statuses</option>
+            @foreach (var status in Enum.GetValues<ApplicationStatus>())
+            {
+                <option value="@status" selected="@(selectedStatus == status)">
+                    @status
+                </option>
+            }
+        </select>
+    </div>
+    <div class="col-auto">
+        <button type="submit" class="btn btn-outline-primary">Apply filter</button>
+        @if (selectedStatus.HasValue)
+        {
+            <a asp-action="Index" class="btn btn-link">Clear</a>
+        }
+    </div>
+</form>
 
 @if (Model.Count == 0)
 {
-    <p class="alert alert-info">No PhD applications found</p>
+    <p class="alert alert-info" role="status">No PhD applications found.</p>
 }
 else
 {
-    <table class="table">
+    <table class="table table-striped align-middle">
+        <caption class="visually-hidden">List of PhD applications</caption>
         <thead>
             <tr>
-                <th>Reference</th>
-                <th>Applicant</th>
-                <th>Programme</th>
-                <th>Mode of study</th>
-                <th>Funding</th>
-                <th>Status</th>
-                <th>Submitted</th>
-                <th>Actions</th>
+                <th scope="col">Reference</th>
+                <th scope="col">Applicant</th>
+                <th scope="col">Programme</th>
+                <th scope="col">Mode of study</th>
+                <th scope="col">Funding</th>
+                <th scope="col">Status</th>
+                <th scope="col">Submitted</th>
+                <th scope="col">Actions</th>
             </tr>
         </thead>
         <tbody>
@@ -54,12 +66,12 @@ else
                 <td>
                     <a asp-action="Details"
                        asp-route-applicationReference="@application.ApplicationReference">
-                        Details
+                        Details<span class="visually-hidden"> for @application.ApplicationReference (@application.FullName)</span>
                     </a>
                     |
                     <a asp-action="EditStatus"
                        asp-route-applicationReference="@application.ApplicationReference">
-                        Edit status
+                        Edit status<span class="visually-hidden"> for @application.ApplicationReference (@application.FullName)</span>
                     </a>
                 </td>
             </tr>

@@ -33,15 +33,10 @@
   /* ------------------------------------------------------------------------
      2. Button Colour System (Distinct semantic colours for actions)
      ------------------------------------------------------------------------ */
-  /* Primary Button: Main form submissions & primary workflows
-     TODO (Lab Part 1 - Task 1: Colour Contrast):
-     The starter primary button background (#7cb8eb) against white text (#ffffff)
-     has a contrast ratio of only 2.12:1, which fails WCAG 2.2 AA (1.4.3 Contrast Minimum: 4.5:1).
-     Change --btn-primary-bg and --btn-primary-border to #0f4c81 (8.86:1 contrast ratio)
-     and --btn-primary-hover to #09355c. See Snippet 1.A in LabResources/code-snippets.md. */
-  --btn-primary-bg: #7cb8eb;
-  --btn-primary-hover: #5aa3e0;
-  --btn-primary-border: #7cb8eb;
+  /* Primary Button: Main form submissions & primary workflows */
+  --btn-primary-bg: #0f4c81;
+  --btn-primary-hover: #09355c;
+  --btn-primary-border: #0f4c81;
   --btn-primary-text: #ffffff;
 
   /* Secondary Button: Neutral navigation, cancel & back actions */

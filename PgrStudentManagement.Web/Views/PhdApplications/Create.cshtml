@@ -1,182 +1,274 @@
-@model PgrStudentManagement.Web.Modules.PhdApplications.Models.PhdApplication
-
-@*
-    ===========================================================================
-    UI/UX & ACCESSIBILITY LAB — STARTING POINT (Create.cshtml)
-    ===========================================================================
-    Right now, every field is a plain <input type="text"> preceded by a <span>
-    (instead of a semantic <label>), with no hints, no fieldsets, and no
-    validation messages.
-
-    Follow LabResources/lab1-instructions.md and copy/adapt the ready-made
-    snippets from LabResources/code-snippets.md:
-      - Part 1 (Quick Wins):
-          * Task 1: Fix the low-contrast .btn-primary colour in wwwroot/css/site.css (Snippet 1.A)
-          * Task 2: Replace every <span class="form-label"> with <label asp-for="..." class="form-label"></label> (Snippet 1.B)
-      - Part 2: Change @model to CreatePhdApplicationViewModel & remove system fields (Snippet 2.A & 2.B)
-      - Part 3: Replace plain text boxes with proper semantic controls (Snippets 3.A–3.D)
-      - Part 4: Improve form layout, section grouping (.form-section, .form-grid-2),
-                and proportionate input widths (.input-width-sm, .input-width-md) (Snippets 4.A & 4.B)
-      - Part 5: Add human-readable display names, hints (aria-describedby),
-                and live character counter (Snippets 5.A & 5.B)
-      - Part 7: Add accessible error summary + inline errors (Snippets 7.A & 7.B)
-      - Part 8: Add HTML client-side validation attributes (Snippet 8.A)
-    ===========================================================================
-*@
+@model PgrStudentManagement.Web.Modules.PhdApplications.Models.CreatePhdApplicationViewModel
 
 @{
-    // TODO (Lab Part 7): Prefix title with "Error: " when !ViewData.ModelState.IsValid (see Snippet 7.A)
-    ViewData["Title"] = "Create PhD Application";
+    var hasErrors = !ViewData.ModelState.IsValid;
+    ViewData["Title"] = hasErrors
+        ? "Error: Create PhD Application"
+        : "Create PhD Application";
+
+    var supervisors = ViewBag.Supervisors
+        as IReadOnlyList<PgrStudentManagement.Web.Modules.AcademicSupervisors.Contracts.SupervisorSummary>
+        ?? Array.Empty<PgrStudentManagement.Web.Modules.AcademicSupervisors.Contracts.SupervisorSummary>();
 }
 
 <h1>Create PhD Application</h1>
 
-@* TODO (Lab Part 4): Wrap the form in <div class="form-container"> and group related fields into
-   four <section class="form-section"> cards (see Snippet 4.B in code-snippets.md). *@
-@* TODO (Lab Part 7): Add the accessible error summary box here (see Snippet 7.A in code-snippets.md) *@
-
-<form asp-action="Create" method="post">
-
-    @* TODO (Lab Part 1 - Task 2): Replace <span class="form-label"> with <label asp-for="..." class="form-label"></label> (Snippet 1.B).
-       TODO (Lab Part 2): Remove ApplicationReference from the form — generate it on the server instead! *@
-    <div class="mb-3">
-        <span class="form-label">ApplicationReference</span>
-        <input type="text"
-               id="ApplicationReference"
-               name="ApplicationReference"
-               value="@Model.ApplicationReference"
-               class="form-control" />
+@if (hasErrors)
+{
+    <div id="error-summary"
+         class="alert alert-danger"
+         role="alert"
+         aria-labelledby="error-summary-title"
+         tabindex="-1">
+        <h2 id="error-summary-title" class="h5">There is a problem</h2>
+        <ul class="mb-0">
+            @foreach (var entry in ViewData.ModelState)
+            {
+                foreach (var error in entry.Value.Errors)
+                {
+                    <li>
+                        @if (!string.IsNullOrEmpty(entry.Key))
+                        {
+                            <a href="#@entry.Key" class="alert-link">@error.ErrorMessage</a>
+                        }
+                        else
+                        {
+                            @error.ErrorMessage
+                        }
+                    </li>
+                }
+            }
+        </ul>
     </div>
+    <script>
+        document.getElementById('error-summary')?.focus();
+    </script>
+}
 
-    @* TODO (Lab Part 1 - Task 2): Replace each <span class="form-label"> with <label asp-for="..." class="form-label"></label> (Snippet 1.B).
-       TODO (Lab Part 3 & Part 4): Replace EmailAddress with type="email" (Snippet 3.A), wrap Section 1 in
-       <section class="form-section">, and pair FirstName/LastName side-by-side in <div class="form-grid-2"> (Snippet 4.B). *@
-    <div class="mb-3">
-        <span class="form-label">FirstName</span>
-        <input type="text"
-               id="FirstName"
-               name="FirstName"
-               value="@Model.FirstName"
-               class="form-control" />
-    </div>
+<div class="form-container">
+    <form asp-action="Create" method="post">
 
-    <div class="mb-3">
-        <span class="form-label">LastName</span>
-        <input type="text"
-               id="LastName"
-               name="LastName"
-               value="@Model.LastName"
-               class="form-control" />
-    </div>
+        <section class="form-section">
+            <h2>1. About you</h2>
 
-    <div class="mb-3">
-        <span class="form-label">EmailAddress</span>
-        <input type="text"
-               id="EmailAddress"
-               name="EmailAddress"
-               value="@Model.EmailAddress"
-               class="form-control" />
-    </div>
+            <div class="form-grid-2">
+                <div class="mb-3">
+                    <label asp-for="FirstName" class="form-label"></label>
+                    <input asp-for="FirstName"
+                           class="form-control"
+                           autocomplete="given-name"
+                           spellcheck="false"
+                           required
+                           maxlength="100" />
+                    <span asp-validation-for="FirstName" class="text-danger"></span>
+                </div>
 
-    @* TODO (Lab Part 1 - Task 2): Replace <span class="form-label"> with <label asp-for="ProgrammeCode" class="form-label"></label>.
-       TODO (Lab Part 3 & Part 4): Replace ProgrammeCode text input with a <select> dropdown (Snippet 3.B) and size it with .input-width-md (Snippet 4.B) *@
-    <div class="mb-3">
-        <span class="form-label">ProgrammeCode</span>
-        <input type="text"
-               id="ProgrammeCode"
-               name="ProgrammeCode"
-               value="@Model.ProgrammeCode"
-               class="form-control" />
-    </div>
+                <div class="mb-3">
+                    <label asp-for="LastName" class="form-label"></label>
+                    <input asp-for="LastName"
+                           class="form-control"
+                           autocomplete="family-name"
+                           spellcheck="false"
+                           required
+                           maxlength="100" />
+                    <span asp-validation-for="LastName" class="text-danger"></span>
+                </div>
+            </div>
 
-    @* TODO (Lab Part 3): Replace ModeOfStudy text input with radio buttons ("Full-time", "Part-time")
-       wrapped in a <fieldset> and <legend> (see Snippet 3.B in code-snippets.md). *@
-    <div class="mb-3">
-        <span class="form-label">ModeOfStudy</span>
-        <input type="text"
-               id="ModeOfStudy"
-               name="ModeOfStudy"
-               value="@Model.ModeOfStudy"
-               class="form-control" />
-    </div>
+            <div class="mb-3">
+                <label asp-for="EmailAddress" class="form-label"></label>
+                <div id="EmailAddress-hint" class="form-text">
+                    We will use this email address to send your application reference and updates.
+                </div>
+                <input asp-for="EmailAddress"
+                       type="email"
+                       class="form-control input-width-md"
+                       autocomplete="email"
+                       spellcheck="false"
+                       required
+                       maxlength="255"
+                       aria-describedby="EmailAddress-hint" />
+                <span asp-validation-for="EmailAddress" class="text-danger"></span>
+            </div>
+        </section>
 
-    @* TODO (Lab Part 1 - Task 2): Replace <span class="form-label"> with <label asp-for="ProposedStartDate" class="form-label"></label>.
-       TODO (Lab Part 3 & Part 4): Replace ProposedStartDate with <input type="date"> (Snippet 3.B) and size it with .input-width-sm (Snippet 4.B) *@
-    <div class="mb-3">
-        <span class="form-label">ProposedStartDate</span>
-        <input type="text"
-               id="ProposedStartDate"
-               name="ProposedStartDate"
-               value="@Model.ProposedStartDate.ToString("yyyy-MM-dd")"
-               class="form-control" />
-    </div>
+        <section class="form-section">
+            <h2>2. Programme and mode of study</h2>
 
-    @* TODO (Lab Part 1 - Task 2): Replace <span class="form-label"> with <label asp-for="ProposedThesisTitle" class="form-label"></label>. *@
-    <div class="mb-3">
-        <span class="form-label">ProposedThesisTitle</span>
-        <input type="text"
-               id="ProposedThesisTitle"
-               name="ProposedThesisTitle"
-               value="@Model.ProposedThesisTitle"
-               class="form-control" />
-    </div>
+            <div class="mb-3">
+                <label asp-for="ProgrammeCode" class="form-label"></label>
+                <select asp-for="ProgrammeCode" class="form-select input-width-md" required>
+                    <option value="">Select a programme…</option>
+                    <option value="PHD-COMP">PhD Computing (PHD-COMP)</option>
+                    <option value="PHD-DESIGN">PhD Design (PHD-DESIGN)</option>
+                    <option value="MPHIL-COMP">MPhil Computing (MPHIL-COMP)</option>
+                </select>
+                <span asp-validation-for="ProgrammeCode" class="text-danger"></span>
+            </div>
 
-    @* TODO (Lab Part 1 - Task 2): Replace <span class="form-label"> with <label asp-for="ResearchSummary" class="form-label"></label>.
-       TODO (Lab Part 5): Replace ResearchSummary with a <textarea rows="6">, a hint linked via
-       aria-describedby, and a live character counter (see Snippet 5.A & 5.B in code-snippets.md). *@
-    <div class="mb-3">
-        <span class="form-label">ResearchSummary</span>
-        <input type="text"
-               id="ResearchSummary"
-               name="ResearchSummary"
-               value="@Model.ResearchSummary"
-               class="form-control" />
-    </div>
+            <fieldset class="mb-3">
+                <legend class="form-label">Mode of study</legend>
 
-    @* TODO (Lab Part 3): Replace FundingSource text input with radio buttons inside a <fieldset>
-       using Html.GetEnumSelectList<FundingType>() (see Snippet 3.C in code-snippets.md). *@
-    <div class="mb-3">
-        <span class="form-label">FundingSource</span>
-        <input type="text"
-               id="FundingSource"
-               name="FundingSource"
-               value="@Model.FundingSource"
-               class="form-control" />
-    </div>
+                <div class="form-check">
+                    <input class="form-check-input"
+                           type="radio"
+                           asp-for="ModeOfStudy"
+                           id="ModeOfStudy-FullTime"
+                           value="Full-time"
+                           required />
+                    <label class="form-check-label" for="ModeOfStudy-FullTime">
+                        Full-time (typically 3 years)
+                    </label>
+                </div>
 
-    @* TODO (Lab Part 1 - Task 2): Replace <span class="form-label"> with <label asp-for="ProposedSupervisorStaffNumber" class="form-label"></label>.
-       TODO (Lab Part 3, Part 4 & Part 5): Replace ProposedSupervisorStaffNumber text box with a <select> showing
-       supervisor names from ViewBag.Supervisors, size with .input-width-md, and mark the label "(optional)" (see Snippet 3.D & 4.B). *@
-    <div class="mb-3">
-        <span class="form-label">ProposedSupervisorStaffNumber</span>
-        <input type="text"
-               id="ProposedSupervisorStaffNumber"
-               name="ProposedSupervisorStaffNumber"
-               value="@Model.ProposedSupervisorStaffNumber"
-               class="form-control" />
-    </div>
+                <div class="form-check">
+                    <input class="form-check-input"
+                           type="radio"
+                           asp-for="ModeOfStudy"
+                           id="ModeOfStudy-PartTime"
+                           value="Part-time"
+                           required />
+                    <label class="form-check-label" for="ModeOfStudy-PartTime">
+                        Part-time (typically 6 years)
+                    </label>
+                </div>
 
-    @* TODO (Lab Part 2): Remove SubmittedDate from the form — set it automatically on the server! *@
-    <div class="mb-3">
-        <span class="form-label">SubmittedDate</span>
-        <input type="text"
-               id="SubmittedDate"
-               name="SubmittedDate"
-               value="@Model.SubmittedDate.ToString("yyyy-MM-dd")"
-               class="form-control" />
-    </div>
+                <span asp-validation-for="ModeOfStudy" class="text-danger"></span>
+            </fieldset>
 
-    @* TODO (Lab Part 1 - Task 1): Fix the non-WCAG-compliant colour contrast on .btn-primary in wwwroot/css/site.css (Snippet 1.A).
-       TODO (Lab Part 4): Wrap the action buttons in <div class="form-actions"> (Snippet 4.B). *@
-    <button type="submit"
-            class="btn btn-primary">
-        Create
-    </button>
+            <div class="mb-3">
+                <label asp-for="ProposedStartDate" class="form-label"></label>
+                <div id="ProposedStartDate-hint" class="form-text">
+                    For example, 01/10/2027. Most cohorts begin in October or January.
+                </div>
+                <input asp-for="ProposedStartDate"
+                       type="date"
+                       class="form-control input-width-sm"
+                       required
+                       aria-describedby="ProposedStartDate-hint" />
+                <span asp-validation-for="ProposedStartDate" class="text-danger"></span>
+            </div>
+        </section>
 
-    <a asp-action="Index"
-       class="btn btn-secondary">
-        Cancel
-    </a>
-</form>
+        <section class="form-section">
+            <h2>3. Research proposal</h2>
 
-@* TODO (Lab Part 8): Add native HTML validation attributes (required, maxlength, type="email", type="date") to form controls (see Snippet 8.A) *@
+            <div class="mb-3">
+                <label asp-for="ProposedThesisTitle" class="form-label"></label>
+                <div id="ProposedThesisTitle-hint" class="form-text">
+                    Provide a working title for your proposed research project (up to 300 characters).
+                </div>
+                <input asp-for="ProposedThesisTitle"
+                       class="form-control"
+                       required
+                       maxlength="300"
+                       aria-describedby="ProposedThesisTitle-hint" />
+                <span asp-validation-for="ProposedThesisTitle" class="text-danger"></span>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="ResearchSummary" class="form-label">
+                    Research summary (optional)
+                </label>
+                <div id="ResearchSummary-hint" class="form-text">
+                    Outline your research question, background context, and proposed methodology in up to 2,000 characters.
+                </div>
+                <textarea asp-for="ResearchSummary"
+                          rows="6"
+                          class="form-control"
+                          data-maxlength="2000"
+                          maxlength="2000"
+                          aria-describedby="ResearchSummary-hint ResearchSummary-count"></textarea>
+                <div id="ResearchSummary-count"
+                     class="form-text"
+                     aria-live="polite">
+                    You have 2,000 characters remaining
+                </div>
+                <span asp-validation-for="ResearchSummary" class="text-danger"></span>
+            </div>
+        </section>
+
+        <section class="form-section">
+            <h2>4. Funding and supervision</h2>
+
+            <fieldset class="mb-3">
+                <legend class="form-label">How will your PhD studies be funded?</legend>
+
+                @foreach (var item in Html.GetEnumSelectList<FundingType>())
+                {
+                    var radioId = $"FundingSource-{item.Value}";
+                    <div class="form-check">
+                        <input class="form-check-input"
+                               type="radio"
+                               name="FundingSource"
+                               id="@radioId"
+                               value="@item.Value"
+                               required
+                               checked="@(Model.FundingSource?.ToString() == item.Text || ((int?)Model.FundingSource)?.ToString() == item.Value)" />
+                        <label class="form-check-label" for="@radioId">
+                            @item.Text
+                        </label>
+                    </div>
+                }
+
+                <span asp-validation-for="FundingSource" class="text-danger"></span>
+            </fieldset>
+
+            <div class="mb-3">
+                <label asp-for="ProposedSupervisorStaffNumber" class="form-label">
+                    Proposed main supervisor (optional)
+                </label>
+                <div id="ProposedSupervisor-hint" class="form-text">
+                    Only academic staff eligible to act as a Main Supervisor are listed. Leave blank if you have not yet identified a supervisor.
+                </div>
+                <select asp-for="ProposedSupervisorStaffNumber"
+                        class="form-select input-width-md"
+                        aria-describedby="ProposedSupervisor-hint">
+                    <option value="">I have not identified a supervisor yet</option>
+                    @foreach (var supervisor in supervisors)
+                    {
+                        <option value="@supervisor.StaffNumber">
+                            @supervisor.DisplayName (@supervisor.StaffNumber)
+                        </option>
+                    }
+                </select>
+                <span asp-validation-for="ProposedSupervisorStaffNumber" class="text-danger"></span>
+            </div>
+        </section>
+
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">
+                Submit application
+            </button>
+            <a asp-action="Index" class="btn btn-secondary">
+                Cancel
+            </a>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    <script>
+        (function () {
+            const textarea = document.getElementById('ResearchSummary');
+            const counter = document.getElementById('ResearchSummary-count');
+            if (!textarea || !counter) return;
+
+            const max = parseInt(textarea.getAttribute('data-maxlength') || '2000', 10);
+
+            function updateCount() {
+                const remaining = max - textarea.value.length;
+                if (remaining >= 0) {
+                    counter.textContent = `You have ${remaining.toLocaleString()} characters remaining`;
+                    counter.classList.remove('text-danger');
+                } else {
+                    counter.textContent = `You have ${Math.abs(remaining).toLocaleString()} characters too many`;
+                    counter.classList.add('text-danger');
+                }
+            }
+
+            textarea.addEventListener('input', updateCount);
+            updateCount();
+        })();
+    </script>
+}

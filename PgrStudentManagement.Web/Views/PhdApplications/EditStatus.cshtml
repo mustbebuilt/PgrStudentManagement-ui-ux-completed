@@ -1,58 +1,74 @@
 @model PgrStudentManagement.Web.Modules.PhdApplications.Models.PhdApplication
 
-@*
-    ===========================================================================
-    UI/UX & ACCESSIBILITY LAB — STARTING POINT (EditStatus.cshtml)
-    ===========================================================================
-    See LabResources/lab1-instructions.md (Part 10 - Optional) and LabResources/code-snippets.md (Snippet 10.A):
-      1. Display the current status clearly above the form.
-      2. Replace the free-text status input with radio buttons populated from
-         ViewBag.AllowedTransitions (returned by PhdApplicationService.GetAllowedTransitions).
-      3. Display validation/domain errors accessibly at the top of the form.
-    ===========================================================================
-*@
-
 @{
     ViewData["Title"] = "Update Application Status";
+    var allowed = ViewBag.AllowedTransitions as IReadOnlyList<ApplicationStatus>
+        ?? Array.Empty<ApplicationStatus>();
 }
 
 <h1>Update Application Status</h1>
 
 <p>
-    <strong>@Model.ApplicationReference:</strong>
-    @Model.FullName
+    <strong>@Model.ApplicationReference:</strong> @Model.FullName
+</p>
+<p>
+    <strong>Current status:</strong>
+    <span class="badge bg-secondary">@Model.Status</span>
 </p>
 
-@* TODO (Lab Part 10 - Optional): Show current status and validation summary here (see Snippet 10.A in code-snippets.md) *@
+@if (!ViewData.ModelState.IsValid)
+{
+    <div asp-validation-summary="All"
+         class="alert alert-danger"
+         role="alert"></div>
+}
 
-<form asp-action="EditStatus" method="post">
-    <input type="hidden"
-           name="applicationReference"
-           value="@Model.ApplicationReference" />
-
-    @* TODO (Lab Part 10 - Optional): Replace this plain text input with radio buttons inside a <fieldset>
-       for the allowed status transitions (see Snippet 10.A in code-snippets.md). *@
-    <div class="mb-3">
-        <label for="status"
-               class="form-label">
-            Status
-        </label>
-
-        <input type="text"
-               id="status"
-               name="status"
-               value="@Model.Status"
-               class="form-control" />
+@if (allowed.Count == 0)
+{
+    <div class="alert alert-info" role="status">
+        This application is in a final state (<strong>@Model.Status</strong>) and its status can no longer be changed.
     </div>
-
-    <button type="submit"
-            class="btn btn-primary">
-        Save
-    </button>
-
     <a asp-action="Details"
        asp-route-applicationReference="@Model.ApplicationReference"
        class="btn btn-secondary">
-        Cancel
+        Return to details
     </a>
-</form>
+}
+else
+{
+    <form asp-action="EditStatus" method="post">
+        <input type="hidden"
+               name="applicationReference"
+               value="@Model.ApplicationReference" />
+
+        <fieldset class="mb-3">
+            <legend class="form-label">Select new status</legend>
+
+            @foreach (var nextStatus in allowed)
+            {
+                var id = $"status-{nextStatus}";
+                <div class="form-check">
+                    <input class="form-check-input"
+                           type="radio"
+                           name="status"
+                           id="@id"
+                           value="@nextStatus"
+                           checked="@(Model.Status == nextStatus)" />
+                    <label class="form-check-label" for="@id">
+                        @nextStatus
+                    </label>
+                </div>
+            }
+        </fieldset>
+
+        <button type="submit" class="btn btn-primary">
+            Save decision
+        </button>
+
+        <a asp-action="Details"
+           asp-route-applicationReference="@Model.ApplicationReference"
+           class="btn btn-secondary">
+            Cancel
+        </a>
+    </form>
+}

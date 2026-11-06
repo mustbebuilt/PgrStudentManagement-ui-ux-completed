@@ -6,9 +6,12 @@
 
 <h1>PhD Application Details</h1>
 
-@* TODO (Lab Part 2): Display the TempData["SuccessMessage"] confirmation banner here
-   using <div class="alert alert-success" role="status"> so users receive clear feedback
-   after RedirectToAction (Post-Redirect-Get pattern). See Snippet 2.C in LabResources/code-snippets.md. *@
+@if (TempData["SuccessMessage"] is string successMessage)
+{
+    <div class="alert alert-success" role="status">
+        @successMessage
+    </div>
+}
 
 <dl class="row">
     <dt class="col-sm-4">Application reference</dt>

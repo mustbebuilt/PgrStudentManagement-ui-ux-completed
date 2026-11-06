@@ -50,38 +50,54 @@ public sealed class PhdApplicationsController : Controller
         return View(application);
     }
 
-    // TODO (Lab Part 2 & Part 3):
-    // 1. Make Create() async and load eligible supervisors into ViewBag.Supervisors
-    //    using await _phdApplicationService.GetEligibleMainSupervisorsAsync(cancellationToken).
-    // 2. Return a CreatePhdApplicationViewModel instead of the PhdApplication entity.
-    // See LabResources/code-snippets.md (Snippet 2.A and Snippet 2.B) for the complete code.
     [HttpGet]
-    public IActionResult Create()
+    public async Task<IActionResult> Create(
+        CancellationToken cancellationToken = default)
     {
-        return View(new PhdApplication
-        {
-            SubmittedDate = DateTime.UtcNow.Date,
-            ProposedStartDate = new DateTime(DateTime.UtcNow.Year + 1, 10, 1)
-        });
+        ViewBag.Supervisors =
+            await _phdApplicationService.GetEligibleMainSupervisorsAsync(
+                cancellationToken);
+
+        return View(new CreatePhdApplicationViewModel());
     }
 
-    // TODO (Lab Part 2 & Part 6):
-    // 1. Add [ValidateAntiForgeryToken].
-    // 2. Bind to CreatePhdApplicationViewModel instead of PhdApplication.
-    // 3. Auto-generate ApplicationReference using
-    //    await _phdApplicationService.GenerateNextApplicationReferenceAsync(cancellationToken).
-    // 4. Set TempData["SuccessMessage"] before RedirectToAction(nameof(Details), ...) so the user
-    //    sees confirmation feedback on the Details page (Post-Redirect-Get pattern).
-    // See LabResources/code-snippets.md (Snippet 2.B and Snippet 2.C) for the complete code.
     [HttpPost]
+    [ValidateAntiForgeryToken]
     public async Task<IActionResult> Create(
-        PhdApplication application,
+        CreatePhdApplicationViewModel model,
         CancellationToken cancellationToken = default)
     {
         if (!ModelState.IsValid)
         {
-            return View(application);
+            ViewBag.Supervisors =
+                await _phdApplicationService.GetEligibleMainSupervisorsAsync(
+                    cancellationToken);
+            return View(model);
         }
+
+        var reference =
+            await _phdApplicationService.GenerateNextApplicationReferenceAsync(
+                cancellationToken);
+
+        var application = new PhdApplication
+        {
+            ApplicationReference = reference,
+            FirstName = model.FirstName.Trim(),
+            LastName = model.LastName.Trim(),
+            EmailAddress = model.EmailAddress.Trim(),
+            ProgrammeCode = model.ProgrammeCode.Trim(),
+            ModeOfStudy = model.ModeOfStudy.Trim(),
+            ProposedStartDate = model.ProposedStartDate,
+            ProposedThesisTitle = model.ProposedThesisTitle.Trim(),
+            ResearchSummary = model.ResearchSummary?.Trim(),
+            FundingSource = model.FundingSource!.Value,
+            ProposedSupervisorStaffNumber =
+                string.IsNullOrWhiteSpace(model.ProposedSupervisorStaffNumber)
+                    ? null
+                    : model.ProposedSupervisorStaffNumber.Trim(),
+            Status = ApplicationStatus.Submitted,
+            SubmittedDate = DateTime.UtcNow.Date
+        };
 
         var outcome = await _phdApplicationService.CreateApplicationAsync(
             application,
@@ -90,43 +106,37 @@ public sealed class PhdApplicationsController : Controller
         switch (outcome)
         {
             case ApplicationOutcome.Created:
+                TempData["SuccessMessage"] =
+                    $"Application {application.ApplicationReference} submitted successfully.";
                 return RedirectToAction(
                     nameof(Details),
-                    new
-                    {
-                        applicationReference = application.ApplicationReference
-                    });
-
-            case ApplicationOutcome.DuplicateReference:
-                ModelState.AddModelError(
-                    nameof(PhdApplication.ApplicationReference),
-                    "An application with this reference already exists.");
-                return View(application);
+                    new { applicationReference = application.ApplicationReference });
 
             case ApplicationOutcome.SupervisorNotFound:
                 ModelState.AddModelError(
-                    nameof(PhdApplication.ProposedSupervisorStaffNumber),
-                    "The proposed academic supervisor was not found.");
-                return View(application);
+                    nameof(model.ProposedSupervisorStaffNumber),
+                    "The selected academic supervisor was not found.");
+                break;
 
             case ApplicationOutcome.SupervisorNotEligible:
                 ModelState.AddModelError(
-                    nameof(PhdApplication.ProposedSupervisorStaffNumber),
-                    "The proposed academic supervisor is not eligible to act as a main supervisor.");
-                return View(application);
+                    nameof(model.ProposedSupervisorStaffNumber),
+                    "The selected supervisor is not eligible to act as a main supervisor.");
+                break;
 
             default:
                 ModelState.AddModelError(
                     string.Empty,
-                    "The PhD application could not be created.");
-                return View(application);
+                    "The PhD application could not be submitted.");
+                break;
         }
+
+        ViewBag.Supervisors =
+            await _phdApplicationService.GetEligibleMainSupervisorsAsync(
+                cancellationToken);
+        return View(model);
     }
 
-    // TODO (Lab Part 10 - Optional):
-    // Pass allowed transitions to the view using:
-    // ViewBag.AllowedTransitions = _phdApplicationService.GetAllowedTransitions(application.Status);
-    // See LabResources/code-snippets.md (Snippet 10.A).
     [HttpGet]
     public async Task<IActionResult> EditStatus(
         string applicationReference,
@@ -147,10 +157,14 @@ public sealed class PhdApplicationsController : Controller
             return View("NotFound");
         }
 
+        ViewBag.AllowedTransitions =
+            _phdApplicationService.GetAllowedTransitions(application.Status);
+
         return View(application);
     }
 
     [HttpPost]
+    [ValidateAntiForgeryToken]
     public async Task<IActionResult> EditStatus(
         string applicationReference,
         ApplicationStatus status,
@@ -169,9 +183,15 @@ public sealed class PhdApplicationsController : Controller
                     applicationReference,
                     cancellationToken);
 
-            return unchanged is null
-                ? View("NotFound")
-                : View(unchanged);
+            if (unchanged is null)
+            {
+                return View("NotFound");
+            }
+
+            ViewBag.AllowedTransitions =
+                _phdApplicationService.GetAllowedTransitions(unchanged.Status);
+
+            return View(unchanged);
         }
 
         var outcome = await _phdApplicationService.UpdateApplicationStatusAsync(
@@ -188,8 +208,9 @@ public sealed class PhdApplicationsController : Controller
 
         if (outcome == ApplicationOutcome.Updated)
         {
-            // TODO (Lab Part 10 - Optional): Set TempData["SuccessMessage"] before redirecting so the Details
-            // page confirms that the status was updated (see Snippet 10.A in LabResources/code-snippets.md).
+            TempData["SuccessMessage"] =
+                $"Application {applicationReference} status updated to {status}.";
+
             return RedirectToAction(
                 nameof(Details),
                 new { applicationReference });
@@ -215,6 +236,9 @@ public sealed class PhdApplicationsController : Controller
         };
 
         ModelState.AddModelError(string.Empty, errorMessage);
+
+        ViewBag.AllowedTransitions =
+            _phdApplicationService.GetAllowedTransitions(application.Status);
 
         return View(application);
     }
