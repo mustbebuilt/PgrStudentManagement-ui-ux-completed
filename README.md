@@ -48,13 +48,13 @@ PgrStudentManagement.Web/Modules/
 
 ### 4. Research Activities Module ([`Modules/ResearchActivities`](./PgrStudentManagement.Web/Modules/ResearchActivities))
 - Tracks student research activities, conference presentations, published papers, and research milestones.
-- **Persistence**: Stubbed from a static JSON file ([`Modules/ResearchActivities/Data/research-activities.json`](./PgrStudentManagement.Web/Modules/ResearchActivities/Data/research-activities.json)).
+- **Persistence**: Relational SQLite database via EF Core (`ResearchActivities` table).
 
 ---
 
 ## Database Architecture & Persistence
 
-The application uses **SQLite** for relational domain models with foreign keys, and a static JSON file for stubbed research activity documents.
+The application uses **SQLite** for relational domain models with foreign keys.
 
 ### 1. SQLite Relational Database (`student-management.db`)
 - **Location**: Local file `PgrStudentManagement.Web/student-management.db` (configured in `appsettings.json`).
@@ -65,6 +65,7 @@ The application uses **SQLite** for relational domain models with foreign keys, 
   - `AcademicSupervisorEligibleRoles`: Many-to-many relationship mapping supervisors to permissible supervisory roles.
   - `SupervisoryAssignments`: Student-supervisor team pairings with start/end dates and role types.
   - `PhdApplications`: Candidate applications, proposals, proposed supervisors, and status history.
+  - `ResearchActivities`: Student research activity logs, reflections, supervisory meetings, and conferences with structured metadata.
 - **Zero Configuration**: SQLite requires no installation or running services.
 - **Automatic Migration & Seeding**: When the application boots, `Program.cs` automatically invokes `context.Database.MigrateAsync()`, ensuring all schema tables are created and seeded if they do not yet exist.
 - **Manual Migrations** (optional):
@@ -72,10 +73,6 @@ The application uses **SQLite** for relational domain models with foreign keys, 
   dotnet ef migrations add <MigrationName> --project PgrStudentManagement.Web
   dotnet ef database update --project PgrStudentManagement.Web
   ```
-
-### 2. Static JSON Research Activities (`research-activities.json`)
-- **Location**: `PgrStudentManagement.Web/Modules/ResearchActivities/Data/research-activities.json` (configured in `appsettings.json` under `ResearchActivityData:FilePath`).
-- **Zero External Services**: Requires no external database server to run or test.
 
 ---
 

@@ -4,9 +4,11 @@ namespace PgrStudentManagement.Web.Modules.ResearchActivities.Data;
 
 public static class ResearchActivityDataSeeder
 {
-    public static async Task SeedAsync(ResearchActivityRepository repository)
+    public static async Task SeedAsync(
+        ResearchActivityRepository repository,
+        CancellationToken cancellationToken = default)
     {
-        var existing = await repository.GetForStudentAsync("S100001");
+        var existing = await repository.GetForStudentAsync("S100001", cancellationToken);
         if (existing.Count > 0)
         {
             return;
@@ -19,7 +21,7 @@ public static class ResearchActivityDataSeeder
             ActivityType = ResearchActivityType.ResearchReflection,
             Title = "Review of initial literature search",
             ActivityDate = new DateTime(2026, 2, 12),
-            CreatedOn = DateTime.UtcNow,
+            CreatedOn = new DateTime(2026, 2, 12, 10, 0, 0, DateTimeKind.Utc),
             Tags = ["literature", "planning"],
             Details = new Dictionary<string, object>
             {
@@ -30,7 +32,7 @@ public static class ResearchActivityDataSeeder
                     "Discuss the inclusion criteria"
                 }
             }
-        });
+        }, cancellationToken);
 
         await repository.AddAsync(new ResearchActivity
         {
@@ -39,7 +41,7 @@ public static class ResearchActivityDataSeeder
             ActivityType = ResearchActivityType.SupervisionMeeting,
             Title = "Monthly supervision meeting",
             ActivityDate = new DateTime(2026, 3, 4),
-            CreatedOn = DateTime.UtcNow,
+            CreatedOn = new DateTime(2026, 3, 4, 14, 0, 0, DateTimeKind.Utc),
             Tags = ["supervision", "methods"],
             Details = new Dictionary<string, object>
             {
@@ -50,7 +52,7 @@ public static class ResearchActivityDataSeeder
                     "Prepare the ethics application"
                 }
             }
-        });
+        }, cancellationToken);
 
         await repository.AddAsync(new ResearchActivity
         {
@@ -59,7 +61,7 @@ public static class ResearchActivityDataSeeder
             ActivityType = ResearchActivityType.ConferenceAttendance,
             Title = "Postgraduate research conference",
             ActivityDate = new DateTime(2026, 3, 18),
-            CreatedOn = DateTime.UtcNow,
+            CreatedOn = new DateTime(2026, 3, 18, 9, 0, 0, DateTimeKind.Utc),
             Tags = ["conference", "presentation"],
             Details = new Dictionary<string, object>
             {
@@ -67,6 +69,6 @@ public static class ResearchActivityDataSeeder
                 ["location"] = "Sheffield",
                 ["presentationTitle"] = "Initial Findings from the Research Project"
             }
-        });
+        }, cancellationToken);
     }
 }

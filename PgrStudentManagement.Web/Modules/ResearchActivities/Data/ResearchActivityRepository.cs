@@ -1,141 +1,53 @@
-using System.Text.Json;
+using Microsoft.EntityFrameworkCore;
 using PgrStudentManagement.Web.Modules.ResearchActivities.Models;
+using PgrStudentManagement.Web.Modules.Students.Data;
 
 namespace PgrStudentManagement.Web.Modules.ResearchActivities.Data;
 
 public class ResearchActivityRepository
 {
-    private const string DefaultRelativeFilePath =
-        "Modules/ResearchActivities/Data/research-activities.json";
+    private readonly StudentManagementDbContext _context;
 
-    private static readonly JsonSerializerOptions JsonOptions = new()
+    public ResearchActivityRepository(StudentManagementDbContext context)
     {
-        PropertyNameCaseInsensitive = true,
-        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-        WriteIndented = true
-    };
-
-    private readonly string _filePath;
-    private readonly List<ResearchActivity> _activities;
-
-    public ResearchActivityRepository(IConfiguration? configuration = null)
-    {
-        var configuredPath = configuration?["ResearchActivityData:FilePath"];
-        _filePath = ResolveFilePath(
-            string.IsNullOrWhiteSpace(configuredPath)
-                ? DefaultRelativeFilePath
-                : configuredPath);
-
-        _activities = LoadActivities(_filePath);
+        _context = context ?? throw new ArgumentNullException(nameof(context));
     }
 
-    public Task<IReadOnlyList<ResearchActivity>> GetAllAsync()
+    public async Task<IReadOnlyList<ResearchActivity>> GetAllAsync(
+        CancellationToken cancellationToken = default)
     {
-        IReadOnlyList<ResearchActivity> all = _activities
+        return await _context.ResearchActivities
+            .AsNoTracking()
             .OrderBy(activity => activity.ActivityDate)
-            .ToList();
-
-        return Task.FromResult(all);
+            .ToListAsync(cancellationToken);
     }
 
-    public Task<IReadOnlyList<ResearchActivity>> GetForStudentAsync(string studentNumber)
+    public async Task<IReadOnlyList<ResearchActivity>> GetForStudentAsync(
+        string studentNumber,
+        CancellationToken cancellationToken = default)
     {
-        IReadOnlyList<ResearchActivity> result = _activities
+        return await _context.ResearchActivities
+            .AsNoTracking()
             .Where(activity => activity.StudentNumber == studentNumber)
             .OrderBy(activity => activity.ActivityDate)
-            .ToList();
-
-        return Task.FromResult(result);
+            .ToListAsync(cancellationToken);
     }
 
-    public Task AddAsync(ResearchActivity activity)
+    public async Task AddAsync(
+        ResearchActivity activity,
+        CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(activity);
 
-        NormalizeDetails(activity);
-        _activities.Add(activity);
-
-        return Task.CompletedTask;
+        _context.ResearchActivities.Add(activity);
+        await _context.SaveChangesAsync(cancellationToken);
     }
 
-    private static string ResolveFilePath(string path)
+    public async Task<bool> ExistsAsync(
+        string id,
+        CancellationToken cancellationToken = default)
     {
-        if (Path.IsPathRooted(path))
-        {
-            return path;
-        }
-
-        var currentDirCandidate = Path.Combine(Directory.GetCurrentDirectory(), path);
-        if (File.Exists(currentDirCandidate))
-        {
-            return currentDirCandidate;
-        }
-
-        return Path.Combine(AppContext.BaseDirectory, path);
-    }
-
-    private static List<ResearchActivity> LoadActivities(string filePath)
-    {
-        if (!File.Exists(filePath))
-        {
-            return [];
-        }
-
-        var json = File.ReadAllText(filePath);
-        if (string.IsNullOrWhiteSpace(json))
-        {
-            return [];
-        }
-
-        var activities = JsonSerializer.Deserialize<List<ResearchActivity>>(json, JsonOptions)
-            ?? [];
-
-        foreach (var activity in activities)
-        {
-            NormalizeDetails(activity);
-        }
-
-        return activities;
-    }
-
-    private static void NormalizeDetails(ResearchActivity activity)
-    {
-        if (activity.Details is null || activity.Details.Count == 0)
-        {
-            return;
-        }
-
-        var normalized = new Dictionary<string, object>(activity.Details.Count);
-        foreach (var (key, value) in activity.Details)
-        {
-            normalized[key] = ConvertValue(value);
-        }
-
-        activity.Details = normalized;
-    }
-
-    private static object ConvertValue(object value)
-    {
-        if (value is not JsonElement element)
-        {
-            return value;
-        }
-
-        return element.ValueKind switch
-        {
-            JsonValueKind.String => element.GetString() ?? string.Empty,
-            JsonValueKind.Number when element.TryGetInt64(out var intValue) => intValue,
-            JsonValueKind.Number => element.GetDouble(),
-            JsonValueKind.True => true,
-            JsonValueKind.False => false,
-            JsonValueKind.Array => element
-                .EnumerateArray()
-                .Select(item => ConvertValue(item))
-                .ToArray(),
-            JsonValueKind.Object => element
-                .EnumerateObject()
-                .ToDictionary(prop => prop.Name, prop => ConvertValue(prop.Value)),
-            _ => string.Empty
-        };
+        return await _context.ResearchActivities
+            .AnyAsync(activity => activity.Id == id, cancellationToken);
     }
 }
