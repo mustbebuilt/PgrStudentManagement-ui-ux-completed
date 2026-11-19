@@ -106,7 +106,7 @@
                 <span asp-validation-for="ProgrammeCode" class="text-danger"></span>
             </div>
 
-            <fieldset class="mb-3">
+            <fieldset id="ModeOfStudy" class="mb-3">
                 <legend class="form-label">Mode of study</legend>
 
                 <div class="form-check">
@@ -191,7 +191,7 @@
         <section class="form-section">
             <h2>4. Funding and supervision</h2>
 
-            <fieldset class="mb-3">
+            <fieldset id="FundingSource" class="mb-3">
                 <legend class="form-label">How will your PhD studies be funded?</legend>
 
                 @foreach (var item in Html.GetEnumSelectList<FundingType>())
